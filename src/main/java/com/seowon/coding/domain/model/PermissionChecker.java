@@ -19,29 +19,25 @@ class PermissionChecker {
             List<UserGroup> groups,
             List<Policy> policies
     ) {
-        for (User user : users) {
-            if (user.id.equals(userId)) {
-                for (String groupId : user.groupIds) {
-                    for (UserGroup group : groups) {
-                        if (group.id.equals(groupId)) {
-                            for (String policyId : group.policyIds) {
-                                for (Policy policy : policies) {
-                                    if (policy.id.equals(policyId)) {
-                                        for (Statement statement : policy.statements) {
-                                            if (statement.actions.contains(targetAction) &&
-                                                statement.resources.contains(targetResource)) {
-                                                return true;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return false;
+
+        List<String> groupIdList = users.stream()
+                .filter(u -> u.id.equals(userId))
+                .flatMap(u -> u.groupIds.stream())
+                .toList();
+
+        List<String> policyIdList = groups.stream()
+                .filter(g -> groupIdList.contains(g.id))
+                .flatMap(g -> g.policyIds.stream())
+                .toList();
+
+
+        List<Statement> statementList = policies.stream()
+                .filter(p ->policyIdList.contains(p.id))
+                .flatMap(p -> p.statements.stream())
+                .toList();
+
+        return statementList.stream()
+                .anyMatch(s -> s.resources.contains(targetResource) &&  s.actions.contains(targetAction));
     }
 }
 
