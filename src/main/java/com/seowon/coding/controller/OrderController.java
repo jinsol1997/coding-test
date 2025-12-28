@@ -1,7 +1,10 @@
 package com.seowon.coding.controller;
 
+import com.seowon.coding.controller.dto.CreateOrderRequest;
+import com.seowon.coding.controller.dto.OrderProduct;
 import com.seowon.coding.domain.model.Order;
 import com.seowon.coding.service.OrderService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -67,4 +70,16 @@ public class OrderController {
      * }
      */
     //
+
+    @PostMapping()
+    public ResponseEntity<?> createOrder(@Valid @RequestBody CreateOrderRequest request) {
+
+        orderService.placeOrder(
+                request.customerName(),
+                request.customerEmail(),
+                request.products().stream().map(OrderProduct::productId).toList(),
+                request.products().stream().map(OrderProduct::quantity).toList()
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
 }
