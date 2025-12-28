@@ -16,7 +16,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -64,7 +66,43 @@ public class OrderService {
         // * order 를 저장
         // * 각 Product 의 재고를 수정
         // * placeOrder 메소드의 시그니처는 변경하지 않은 채 구현하세요.
-        return null;
+
+        Order order = Order.builder()
+                .customerName(customerName)
+                .customerEmail(customerEmail)
+                .status(Order.OrderStatus.PENDING)
+                .orderDate(LocalDateTime.now())
+                .build();
+
+        List<Product> products = productRepository.findAllById(productIds);
+        Map<Long, Product> productMap = products.stream()
+                .collect(Collectors.toMap(Product::getId, p -> p));
+
+        if(productMap.size() != productIds.size()) {
+            throw new RuntimeException("Product size mismatch");
+        }
+
+        for(int i=0; i<productIds.size(); i++) {
+            Long productId = productIds.get(i);
+            Integer quantity = quantities.get(i);
+
+            Product product = productMap.get(productId);
+
+            if(product == null) {
+                throw new RuntimeException("Product not found with id: " + productId);
+            }
+
+            OrderItem orderItem = OrderItem.builder()
+                    .product(product)
+                    .quantity(quantity)
+                    .price(product.getPrice())
+                    .build();
+
+            product.decreaseStock(quantity);
+            order.addItem(orderItem);
+        }
+
+        return orderRepository.save(order);
     }
 
     /**
